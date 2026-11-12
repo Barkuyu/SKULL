@@ -129,6 +129,9 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 #bottomUI>*{pointer-events:none}
 #sub{max-width:92vw;height:1.5em;line-height:1.5em;text-align:center;font-size:clamp(17px,2.4vw,26px);font-weight:900;color:#fff;text-shadow:0 0 6px #000,0 0 12px #000,2px 2px 0 #000,-2px -2px 0 #000;opacity:0;transition:opacity .25s;letter-spacing:.05em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 #sub.on{opacity:1}
+#waitTag{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);z-index:7;max-width:88vw;text-align:center;font-size:clamp(14px,2vw,20px);font-weight:700;letter-spacing:.08em;color:#ffe9c9;text-shadow:0 0 6px #000,0 0 12px #000,1px 1px 0 #000,-1px -1px 0 #000;opacity:0;pointer-events:none;transition:opacity .2s}
+#waitTag.on{opacity:1;animation:wtp 1.6s ease-in-out infinite}
+@keyframes wtp{50%{opacity:.55}}
 #hint{max-width:min(620px,94vw);text-align:center;font-weight:900;font-size:16px;line-height:1.45;letter-spacing:.05em;text-shadow:0 2px 0 #000,0 0 8px rgba(0,0,0,.6)}
 #actionBar{display:flex;justify-content:center;align-items:flex-end;gap:12px;flex-wrap:wrap}
 #actionBar .btn3d{pointer-events:auto;margin-bottom:6px;white-space:nowrap}
@@ -252,7 +255,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
    </div>
    <div class="panel3d" id="scoreBox"></div>
    <div class="panel3d hide" id="logPanel"></div>
-   <div id="bottomUI"><div id="sub"></div><div id="hint" style="display:none"></div><div id="actionBar"></div><div class="panel3d" id="myStack"></div></div>
+   <div id="waitTag"></div><div id="bottomUI"><div id="sub"></div><div id="hint" style="display:none"></div><div id="actionBar"></div><div class="panel3d" id="myStack"></div></div>
    <div id="skillFan"></div>
    <div id="roundBanner"><b id="rbT">第 1 輪</b><span id="rbS"></span></div>
  </div>
@@ -329,7 +332,9 @@ async function skillWindow(G,io,c,fx){
       const usable=usableCards(G,p,c,fx);
       if(!usable.length)break;
       const targets=P.filter(q=>q.alive&&q.idx!==i).map(q=>q.idx);
+      await io.anim('skillWait',{p:i,kind:'use'});
       const act=await io.decide(p,'useSkill',{cards:usable,challenger:c.idx,targets});
+      await io.anim('skillWait',{p:-1});
       if(!act||!usable.includes(act.card))break;
       const card=act.card;let target=-1;
       if(card==='seer'||card==='spy'){target=targets.includes(act.target)?act.target:targets[0];}
@@ -340,7 +345,9 @@ async function skillWindow(G,io,c,fx){
       for(const e of affected){
         if(e===i)continue;const ep=P[e];
         if(ep.alive&&ep.cards.includes('clarity')){
+          await io.anim('skillWait',{p:e,kind:'clarity'});
           const yes=await io.decide(ep,'clarity',{by:i,card,target});
+          await io.anim('skillWait',{p:-1});
           if(yes){ep.cards.splice(ep.cards.indexOf('clarity'),1);cancelled=true;clarityBy=e;break;}
         }
       }
@@ -1911,6 +1918,11 @@ async function handleAnim(type,d,my){
       sub(`${p.name} 成為挑戰者：要翻到 ${d.value} 朵花！`,3000);log(`${p.name} 以 ${d.value} 朵成為挑戰者`);
       $('#rowFlip').style.display='';$('#vFlip').textContent=`0 / ${d.value}`;
       lookAtActor(d.challenger);V3.focusSeat(G.players[d.challenger].human?null:d.challenger,0.5);refresh();await V3.wait(1.2);break;}
+    case 'skillWait':{
+      const t=$('#waitTag');if(!t)break;
+      if(d.p>0){t.textContent=d.kind==='clarity'?`等待 ${pname(d.p)} 決定是否發動「絕對清晰」…`:`等待 ${pname(d.p)} 決定是否發動技能卡…`;t.classList.add('on');}
+      else t.classList.remove('on');
+      break;}
     case 'skillWindow':{
       setHint('');curActor=-1;refresh();await V3.wait(0.25);break;}
     case 'skillGain':{
@@ -2005,7 +2017,7 @@ function prepGameMP(roster,me,diff){
 function afterCreate(){
   runId++;lastCardN=0;paused=false;pauseWaiters=[];curActor=-1;bubbles.splice(0).forEach(b=>b.el.remove());
   $('#logPanel').innerHTML='';$('#logPanel').classList.add('hide');
-  V3.newGame(G);buildPlates();setActions([]);setHint('');$('#sub').classList.remove('on');
+  V3.newGame(G);buildPlates();setActions([]);setHint('');{const w=$('#waitTag');if(w)w.classList.remove('on');}$('#sub').classList.remove('on');
   showScreen('game');V3.snapCamera();refresh();
   Aud.setIntensity(1);
 }
