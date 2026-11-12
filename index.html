@@ -87,6 +87,10 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 #menu .title3d{position:absolute;left:0;right:0;top:max(6.5vh,calc(env(safe-area-inset-top,0px) + 34px));margin:0;pointer-events:none}
 .codebig{font:900 44px var(--serif);letter-spacing:.18em;color:var(--gold);text-shadow:0 3px 0 #5a3a10,0 6px 14px rgba(0,0,0,.6);margin:4px 0 8px;user-select:all}
 #menu .btn3d{width:100%}
+#menu .btn3d,#menu .btn3d.wood,#menu .btn3d.lg{background:none;box-shadow:none;border:26px solid transparent;border-image:var(--plate-red) 100 fill/26px stretch;border-radius:0;min-height:0;padding:2px 20px;color:#fff;font-weight:900;letter-spacing:.18em;text-shadow:0 2px 0 #3a0705,0 0 8px rgba(0,0,0,.7);filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
+#menu .btn3d::before{display:none}
+#menu .btn3d:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.15) drop-shadow(0 9px 8px rgba(0,0,0,.6))}
+#menu .btn3d:active,#menu .btn3d.pressed{transform:translateY(3px) scale(.98);box-shadow:none;filter:brightness(.85) drop-shadow(0 2px 3px rgba(0,0,0,.6))}
 #menu .ver{margin-top:10px;font-size:13px;opacity:.55;letter-spacing:.2em}
 @media (max-width:760px){#menu .col{left:50%;top:auto;bottom:calc(24px + var(--sab));transform:translateX(-50%);align-items:center}#menu .title3d .en{font-size:clamp(52px,15vw,96px)}}
 #setup .panel3d{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,94vw);max-height:92vh;overflow:auto}
