@@ -232,6 +232,7 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .res-row.h{color:var(--gold);font-size:13px}
 .trophy{font-size:64px;text-align:center;filter:drop-shadow(0 8px 6px rgba(0,0,0,.6))}
 .muted{opacity:.65;font-size:13px}
+@media (max-aspect-ratio:9/10){#skillFan{height:15vh;--cw:min(9vh,17vw)}}
 </style><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -1416,7 +1417,7 @@ const V3=(()=>{
     tmp.position.copy(gp.pos);tmp.lookAt(gp.look);tmp.updateMatrixWorld(true);
     const dist=tmp.position.distanceTo(new VEC(0,0.2,MAT_Z));
     const hh=dist*Math.tan(camera.fov*Math.PI/360),ww=hh*camera.aspect;
-    const nmax=Math.max(4,(GS&&GS.total)||4);fanCfg.sp=Math.min(camera.aspect<0.9?0.8:0.42,1.75*ww/(nmax*1.05));fanCfg.sc=Math.max(0.6,fanCfg.sp/0.42);
+    const nmax=Math.max(4,(GS&&GS.total)||4);fanCfg.sp=Math.min(camera.aspect<0.9?0.5:0.42,1.75*ww/(nmax*1.05));fanCfg.sc=Math.max(0.6,fanCfg.sp/0.42);
     const topY=0.06+2*TILE_R*fanCfg.sc*Math.sin(fanCfg.tilt)+0.06;
     const top=new VEC(0,topY,MAT_Z).project(tmp);
     const px=(1+top.y)/2*window.innerHeight;
