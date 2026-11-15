@@ -2338,10 +2338,9 @@ const Net=(()=>{
     return Promise.race([new Promise((res,rej)=>{const s=document.createElement('script');s.src=PEER_SRC;s.onload=res;s.onerror=()=>rej(new Error('PeerJS 載入失敗'));document.head.appendChild(s);}),timeout(8000,'PeerJS 載入逾時')]);
   }
   /* ---- PeerJS ---- */
-  async function peerHost(h){
+  async function peerHost(h,code){
     await loadPeer();
-    for(let tries=0;tries<3;tries++){
-      const code=mkCode();
+    {
       try{
         return await new Promise((res,rej)=>{
           const peer=new Peer('skull3d-'+code),conns={};let opened=false;
@@ -2354,14 +2353,13 @@ const Net=(()=>{
             c.on('close',()=>{delete conns[c.peer];h.onLeave(c.peer);});
             c.on('error',()=>{});
           });
-          const api={kind:'peer',code:'P'+code,id:'host',
+          const api={kind:'peer',code:code,id:'host',
             send(to,m){const c=conns[to];if(c&&c.open)c.send(m);},
             bcast(m){Object.values(conns).forEach(c=>c.open&&c.send(m));},
             close(){try{peer.destroy();}catch(e){}}};
         });
-      }catch(e){if(!e.dup)throw e;}
+      }catch(e){if(e.dup)throw new Error('這組密碼已被其他房間使用，請換一組四位數字');throw e;}
     }
-    throw new Error('房間代碼重複');
   }
   async function peerJoin(code,h){
     await loadPeer();
@@ -2404,23 +2402,26 @@ const Net=(()=>{
     },3000);
     return {kind:'room',code,id:me,send:emit,bcast:m=>emit('*',m),close(){alive=false;clearInterval(hb);try{r.leave&&r.leave();}catch(e){}}};
   }
-  async function roomHost(h){
-    const code=mkCode(),r=await getRoom('skull3d-'+code);
-    return roomApi(r,'host',true,h,'R'+code);
+  async function roomHost(h,code){
+    const r=await getRoom('skull3d-'+code);
+    return roomApi(r,'host',true,h,code);
   }
   async function roomJoin(code,h){
     const r=await getRoom('skull3d-'+code);
-    return roomApi(r,'g'+rid(),false,{onMsg:(f,m)=>{if(f==='host')h.onMsg('host',m);},onLeave:f=>{if(f==='host')h.onLeave('host');}},'R'+code);
+    return roomApi(r,'g'+rid(),false,{onMsg:(f,m)=>{if(f==='host')h.onMsg('host',m);},onLeave:f=>{if(f==='host')h.onLeave('host');}},code);
   }
   return {
-    async createHost(h){
-      try{return await peerHost(h);}
-      catch(e1){console.warn('PeerJS 不可用，改用備援通道：',e1);
-        try{return await roomHost(h);}catch(e2){const err=new Error('PeerJS：'+(e1.message||e1)+'；備援：'+(e2.message||e2));throw err;}}
+    async createHost(h,pw){
+      try{return await peerHost(h,pw);}
+      catch(e1){
+        if(/密碼/.test(e1.message||''))throw e1;
+        console.warn('PeerJS 不可用，改用備援通道：',e1);
+        try{return await roomHost(h,pw);}catch(e2){throw new Error('PeerJS：'+(e1.message||e1)+'；備援：'+(e2.message||e2));}}
     },
-    async join(code,h){
-      const k=code[0],c=code.slice(1);
-      return k==='R'?roomJoin(c,h):peerJoin(c,h);
+    async join(pw,h){
+      try{return await peerJoin(pw,h);}
+      catch(e1){
+        try{return await roomJoin(pw,h);}catch(e2){throw e1;}}
     }
   };
 })();
@@ -2442,29 +2443,27 @@ function mpErr(msg){
 /* ---- 入口 ---- */
 function mpEntry(){
   const d=openDlg(`<h2>多人模式</h2>
-    <p class="muted" style="text-align:center">使用 PeerJS 點對點連線。房主建立房間後，把代碼傳給朋友。</p>
+    <p class="muted" style="text-align:center">使用 PeerJS 點對點連線。房主自訂一組四位數字密碼並建立房間，再把密碼告訴朋友；朋友輸入同一組密碼即可加入。</p>
     <div class="field"><label>你的名字</label><input class="txt3d" id="mName" maxlength="8"></div>
-    <div class="dlg-actions" style="margin-bottom:6px"><button class="btn3d lg" id="mHost" data-sfx="confirm" style="width:100%">建立房間</button></div>
-    <div class="field"><label>加入房間（輸入代碼）</label><div style="display:flex;gap:10px"><input class="txt3d" id="mCode" maxlength="6" placeholder="例如 P4K7Q" style="text-transform:uppercase;letter-spacing:.2em"><button class="btn3d wood" id="mJoin" data-sfx="confirm" style="margin:0;white-space:nowrap">加入</button></div></div>
+    <div class="field"><label>房間密碼（4 位數字）</label><input class="txt3d" id="mCode" maxlength="4" inputmode="numeric" pattern="[0-9]*" placeholder="例如 1234" style="letter-spacing:.5em;text-align:center"></div>
+    <div class="dlg-actions" style="margin-bottom:6px;gap:10px"><button class="btn3d lg" id="mHost" data-sfx="confirm" style="flex:1">建立房間</button><button class="btn3d wood lg" id="mJoin" data-sfx="confirm" style="flex:1">加入房間</button></div>
     <div class="dlg-actions"><button class="btn3d wood" id="mBack" data-sfx="back">返回</button></div>`);
   const nm=d.el.querySelector('#mName');nm.value=S.name||'你';
   const saveName=()=>{S.name=(nm.value||'你').trim().slice(0,8)||'你';saveS();};
   d.el.querySelector('#mBack').onclick=()=>d.close();
-  d.el.querySelector('#mHost').onclick=async()=>{saveName();await d.close(true);mpHostFlow();};
-  d.el.querySelector('#mJoin').onclick=async()=>{
-    saveName();const code=d.el.querySelector('#mCode').value.trim().toUpperCase();
-    if(!/^[PR][A-Z0-9]{5}$/.test(code)){mpErr('代碼格式不正確，應為 6 碼（例如 P4K7Q2）。');return;}
-    await d.close(true);mpJoinFlow(code);
-  };
+  const pwOk=()=>{const v=d.el.querySelector('#mCode').value.trim();if(!/^\d{4}$/.test(v)){mpErr('請先設定四位數字的房間密碼（例如 1234）。');return null;}return v;};
+  d.el.querySelector('#mCode').addEventListener('input',e=>{e.target.value=e.target.value.replace(/\D/g,'').slice(0,4);});
+  d.el.querySelector('#mHost').onclick=async()=>{saveName();const pw=pwOk();if(!pw)return;await d.close(true);mpHostFlow(pw);};
+  d.el.querySelector('#mJoin').onclick=async()=>{saveName();const pw=pwOk();if(!pw)return;await d.close(true);mpJoinFlow(pw);};
 }
 function mpBusy(text){const d=openDlg(`<h2 style="text-align:center">${text}</h2><p class="muted" style="text-align:center">請稍候…</p>`);return d;}
 
 /* ---- 房主 ---- */
-async function mpHostFlow(){
+async function mpHostFlow(pw){
   mpReset();MP.on=true;MP.role='host';
   const busy=mpBusy('建立房間中');
   try{
-    MP.t=await Net.createHost({onMsg:hostMsg,onLeave:hostLeave});
+    MP.t=await Net.createHost({onMsg:hostMsg,onLeave:hostLeave},pw);
   }catch(e){
     await busy.close(true);mpReset();
     mpErr('無法建立房間。<br><span class="muted">'+String(e.message||e)+'</span><br><br>artifact 沙盒會封鎖 WebSocket／WebRTC，PeerJS 需要在一般瀏覽器開啟遊戲檔案才連得上。');return;
@@ -2517,15 +2516,15 @@ function hostLeave(id){
 }
 function lobbyDlg(){
   const d=openDlg(`<h2>等待玩家加入</h2>
-    <div class="inset3d" style="text-align:center"><div class="muted">房間代碼（${MP.t.kind==='peer'?'PeerJS':'備援通道'}）</div>
+    <div class="inset3d" style="text-align:center"><div class="muted">房間密碼（${MP.t.kind==='peer'?'PeerJS':'備援通道'}）</div>
       <div class="codebig" id="lCode">${MP.code}</div>
-      <button class="chip3d" id="lCopy">複製代碼</button></div>
+      <button class="chip3d" id="lCopy">複製密碼</button></div>
     <div class="inset3d" id="lList" style="margin-top:10px"></div>
     <div class="field"><label>總人數（不足由電腦補位）</label><div id="lN"></div></div>
     <div class="field"><label>電腦強度</label><div id="lD"></div></div>
     <div class="dlg-actions"><button class="btn3d wood" id="lLeave" data-sfx="back">關閉房間</button><button class="btn3d lg" id="lGo" data-sfx="confirm">開始遊戲</button></div>`);
   MP.lobbyDlg=d;
-  d.el.querySelector('#lCopy').onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>sub('已複製代碼',1200));}catch(e){}};
+  d.el.querySelector('#lCopy').onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>sub('已複製密碼',1200));}catch(e){}};
   d.el.querySelector('#lLeave').onclick=async()=>{await d.close();leaveMP();};
   d.el.querySelector('#lGo').onclick=async()=>{await d.close(true);MP.lobbyDlg=null;hostStart();};
   renderLobby();
@@ -2580,12 +2579,12 @@ async function mpJoinFlow(code){
     MP.t=await Net.join(code,{onMsg:(f,m)=>guestMsg(m),onLeave:f=>{if(f==='host')guestHostGone();}});
   }catch(e){
     await busy.close(true);mpReset();
-    mpErr('無法連線到房間。<br><span class="muted">'+String(e.message||e)+'</span><br><br>請確認代碼正確、房主仍在線上。PeerJS 需要在一般瀏覽器才連得上（artifact 沙盒會封鎖）。');return;
+    mpErr('無法連線到房間。<br><span class="muted">'+String(e.message||e)+'</span><br><br>請確認密碼正確、房主仍在線上。PeerJS 需要在一般瀏覽器才連得上（artifact 沙盒會封鎖）。');return;
   }
   MP.code=code;
-  let tries=0;const hello=()=>{if(!MP.on||MP.lobby.length||MP.started)return;if(++tries>6){const t=MP.t;mpReset();try{t.close();}catch(e){}busy.close(true);mpErr('房主沒有回應，請確認代碼。');return;}MP.t.send('host',{t:'hello',name:S.name||'玩家',set:S.set});setTimeout(hello,1500);};
+  let tries=0;const hello=()=>{if(!MP.on||MP.lobby.length||MP.started)return;if(++tries>6){const t=MP.t;mpReset();try{t.close();}catch(e){}busy.close(true);mpErr('房主沒有回應，請確認密碼。');return;}MP.t.send('host',{t:'hello',name:S.name||'玩家',set:S.set});setTimeout(hello,1500);};
   await busy.close(true);
-  const d=openDlg(`<h2>已加入房間</h2><div class="inset3d" style="text-align:center"><div class="muted">房間代碼</div><div class="codebig">${code}</div></div>
+  const d=openDlg(`<h2>已加入房間</h2><div class="inset3d" style="text-align:center"><div class="muted">房間密碼</div><div class="codebig">${code}</div></div>
     <div class="inset3d" id="lList" style="margin-top:10px"><div class="muted" style="text-align:center">連線中…</div></div>
     <p class="muted" style="text-align:center">等待房主開始遊戲…</p>
     <div class="dlg-actions"><button class="btn3d wood" id="lLeave" data-sfx="back">離開房間</button></div>`);
@@ -2626,7 +2625,7 @@ async function guestHandle(m){
     MP.cancel=null;
     if(v&&v.cancel){V3.setHand(false);V3.setTargets(null);setActions([]);setHint('');clearKeys();closeAllDlg();curActor=-1;return;}
     if(runId!==my)return;
-    MP.t.send('host',{t:'dec',id:m.id,v:mpAns(m.kind,v,MP.me,G.N)});
+    MP.t.send('host',{t:'dec',id:m.id,v});
   }
 }
 
