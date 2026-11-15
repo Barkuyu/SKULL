@@ -51,13 +51,13 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 
 /* ===== 3D 面板 / 視窗 ===== */
 .panel3d{position:relative;padding:4px 10px;border:34px solid transparent;border-image:var(--plate-black) 100 fill/34px stretch;border-radius:0;background:none;
- filter:drop-shadow(0 4px 0 rgba(0,0,0,.55)) drop-shadow(0 20px 26px rgba(0,0,0,.65));
- transform-style:preserve-3d;transition:transform .15s}
+ box-shadow:0 12px 26px rgba(0,0,0,.55);
+ transition:transform .15s}
 .panel3d::before{display:none!important}
 /* HUD 小面板：暗鋼板；提示：紅木牌；名牌：黃銅板 */
 #infoBox,#scoreBox,#myStack,#logPanel{padding:1px 5px;border-width:13px;border-image:var(--plate-steel) 100 fill/13px stretch}
 #hint{border:15px solid transparent;border-image:var(--plate-red) 100 fill/15px stretch;background:none;box-shadow:none;border-radius:0;padding:0 6px;color:#fff;
- filter:drop-shadow(0 3px 0 rgba(0,0,0,.6)) drop-shadow(0 10px 14px rgba(0,0,0,.6))}
+ box-shadow:0 6px 12px rgba(0,0,0,.5)}
 @media (max-width:520px){.panel3d{border-width:26px;border-image-width:26px}#infoBox,#scoreBox,#myStack,#logPanel{border-width:12px;border-image-width:12px}}
 .panel3d h2{margin:0 0 14px;font-family:var(--serif);font-size:26px;letter-spacing:.14em;color:var(--amber);text-shadow:0 2px 0 #000,0 0 16px rgba(255,140,60,.35)}
 .panel3d p{line-height:1.75;margin:.4em 0;color:#ead9bb}
@@ -84,14 +84,14 @@ button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
 .tap{margin-top:46px;font-size:18px;letter-spacing:.3em;color:#ffd9a8;animation:blink 1.6s infinite;text-shadow:0 2px 6px #000}
 @keyframes blink{50%{opacity:.35}}
 #menu .col{position:absolute;left:max(5vw,var(--sal));top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-start;gap:0;width:min(420px,90vw)}
-.title3d .logo{display:block;margin:0 auto;width:min(86vw,640px);max-height:30vh;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.7)) drop-shadow(0 0 22px rgba(160,60,90,.35))}
+.title3d .logo{display:block;margin:0 auto;width:min(86vw,640px);max-height:30vh;object-fit:contain;filter:drop-shadow(0 8px 14px rgba(0,0,0,.7))}
 #menu .title3d{position:absolute;left:0;right:0;top:max(6.5vh,calc(env(safe-area-inset-top,0px) + 34px));margin:0;pointer-events:none}
 .codebig{font:900 44px var(--serif);letter-spacing:.18em;color:var(--gold);text-shadow:0 3px 0 #5a3a10,0 6px 14px rgba(0,0,0,.6);margin:4px 0 8px;user-select:all}
 #menu .btn3d{width:100%}
-#menu .btn3d,#menu .btn3d.wood,#menu .btn3d.lg{background:none;box-shadow:none;border:26px solid transparent;border-image:var(--plate-red) 100 fill/26px stretch;border-radius:0;min-height:0;padding:2px 20px;color:#fff;font-weight:900;letter-spacing:.18em;text-shadow:0 2px 0 #3a0705,0 0 8px rgba(0,0,0,.7);filter:drop-shadow(0 6px 6px rgba(0,0,0,.6))}
+#menu .btn3d,#menu .btn3d.wood,#menu .btn3d.lg{background:none;box-shadow:none;border:26px solid transparent;border-image:var(--plate-red) 100 fill/26px stretch;border-radius:0;min-height:0;padding:2px 20px;color:#fff;font-weight:900;letter-spacing:.18em;text-shadow:0 2px 0 #3a0705,0 0 8px rgba(0,0,0,.7);box-shadow:0 6px 8px rgba(0,0,0,.5)}
 #menu .btn3d::before{display:none}
-#menu .btn3d:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.15) drop-shadow(0 9px 8px rgba(0,0,0,.6))}
-#menu .btn3d:active,#menu .btn3d.pressed{transform:translateY(3px) scale(.98);box-shadow:none;filter:brightness(.85) drop-shadow(0 2px 3px rgba(0,0,0,.6))}
+#menu .btn3d:hover{transform:translateY(-3px) scale(1.03);filter:brightness(1.15)}
+#menu .btn3d:active,#menu .btn3d.pressed{transform:translateY(3px) scale(.98);box-shadow:none;filter:brightness(.85)}
 #menu .ver{margin-top:10px;font-size:13px;opacity:.55;letter-spacing:.2em}
 @media (max-width:760px){#menu .col{left:50%;top:auto;bottom:calc(24px + var(--sab));transform:translateX(-50%);align-items:center}#menu .title3d .en{font-size:clamp(52px,15vw,96px)}}
 #setup .panel3d{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(620px,94vw);max-height:92vh;overflow:auto}
@@ -173,12 +173,12 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .cthumb:hover{transform:translateY(-4px) scale(1.04)}
 .cthumb b{position:absolute;right:4px;bottom:4px;background:#000a;color:#ffd36a;padding:1px 6px;border-radius:8px;font-size:14px}
 #gainFx{position:absolute;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;pointer-events:none;perspective:1300px}
-#gainFx .ggl{position:absolute;width:120vmin;height:120vmin;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,220,140,0),rgba(255,220,140,.5),rgba(255,90,60,0),rgba(255,220,140,.5),rgba(255,220,140,0));filter:blur(14px);animation:ggs 2.6s linear both,ggi 2.6s ease-out both;mask-image:radial-gradient(circle,#000 20%,transparent 66%);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 66%)}
+#gainFx .ggl{position:absolute;width:120vmin;height:120vmin;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,220,140,0),rgba(255,220,140,.5),rgba(255,90,60,0),rgba(255,220,140,.5),rgba(255,220,140,0));animation:ggs 2.6s linear both,ggi 2.6s ease-out both;mask-image:radial-gradient(circle,#000 20%,transparent 66%);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 66%)}
 #gainFx.fly .ggl{opacity:0;animation:none}
 #gainFx .gcard{position:relative;height:min(46vh,70vw);aspect-ratio:2/3;background-size:cover;background-position:center;border-radius:5%;transform-style:preserve-3d;box-shadow:0 0 30px 8px rgba(255,210,120,.8),0 0 90px 24px rgba(255,80,60,.45)}
 @keyframes gcIn{from{opacity:0;transform:translateY(30vh) scale(.3)}to{opacity:1;transform:none}}
 @keyframes gcSpin{from{transform:rotateY(0)}to{transform:rotateY(1080deg)}}
-@keyframes gcGlow{from{filter:brightness(1) drop-shadow(0 0 10px #ffd27a)}to{filter:brightness(1.45) drop-shadow(0 0 34px #fff3c4)}}
+@keyframes gcGlow{from{filter:brightness(1)}to{filter:brightness(1.4)}}
 @keyframes gcFly{from{transform:none}to{transform:translate(var(--dx),var(--dy)) scale(var(--s));opacity:.95}}
 @keyframes ggs{to{transform:rotate(300deg)}}
 @keyframes ggi{0%{opacity:0}25%{opacity:1}100%{opacity:.9}}
@@ -207,11 +207,11 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 /* 名牌 */
 #plates{position:absolute;inset:0;pointer-events:none;z-index:5}
 .np{position:absolute;left:0;top:0;transform:translate(-50%,-100%);will-change:transform;white-space:nowrap;padding:0 6px 2px;font-weight:900;font-size:15px;text-align:center;color:#fff3d8;text-shadow:0 1px 0 #000,0 0 6px rgba(0,0,0,.8);
- border:11px solid transparent;border-image:var(--plate-brass) 100 fill/11px stretch;filter:drop-shadow(0 4px 0 rgba(0,0,0,.55)) drop-shadow(0 9px 12px rgba(0,0,0,.6));transition:filter .2s,opacity .2s}
+ border:11px solid transparent;border-image:var(--plate-brass) 100 fill/11px stretch;box-shadow:0 5px 8px rgba(0,0,0,.5);transition:opacity .2s}
 .np .nm{display:flex;align-items:center;gap:7px;justify-content:center}
 .np .cd{width:12px;height:12px;border-radius:50%;box-shadow:inset 0 -3px 0 rgba(0,0,0,.3),0 0 0 2px rgba(255,255,255,.5)}
 .np .sub2{font-size:12px;font-weight:700;color:#ffe9b8;margin-top:2px;letter-spacing:.05em}
-.np.act{filter:brightness(1.25) drop-shadow(0 0 14px rgba(255,211,106,.9)) drop-shadow(0 8px 10px rgba(0,0,0,.6))}
+.np.act{box-shadow:0 0 16px 4px rgba(255,211,106,.85),0 6px 8px rgba(0,0,0,.5)}
 .np.out{opacity:.45;filter:grayscale(1)}
 .np .bidb{display:none;margin-top:3px;padding:2px 10px;border-radius:9px;background:linear-gradient(#ff9a52,#d9531e);color:#fff;font-size:13px;box-shadow:0 2px 0 #6a2208}
 .np.hasbid .bidb{display:inline-block}
@@ -1011,7 +1011,7 @@ const Aud=(()=>{
 const TABLE_R=2.6,SEAT_R=3.25,MAT_Z=1.95,STACK_Z=1.28,TILE_R=0.235,TILE_H=0.055;
 const ENC=THREE.sRGBEncoding;
 function mkCanvas(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;return c;}
-function canvasTex(c,aniso){const t=new THREE.CanvasTexture(c);t.encoding=ENC;t.anisotropy=aniso||8;return t;}
+function canvasTex(c,aniso){const t=new THREE.CanvasTexture(c);t.encoding=ENC;t.anisotropy=Math.min(aniso||4,4);return t;}
 function rr(c,x,y,w,h,r){c.beginPath();c.moveTo(x+r,y);c.arcTo(x+w,y,x+w,y+h,r);c.arcTo(x+w,y+h,x,y+h,r);c.arcTo(x,y+h,x,y,r);c.arcTo(x,y,x+w,y,r);c.closePath();}
 let _seed=7;function srand(){_seed=(_seed*16807)%2147483647;return (_seed-1)/2147483646;}
 
@@ -1066,7 +1066,7 @@ function tileFaceTex(si,kind){return coinTex(si,kind==='S'?'skull':'rose');}
 function tileBackTex(si){return coinTex(si,'back');}
 function imgTex(src,srgb){
   const t=new THREE.Texture(document.createElement('canvas'));
-  if(srgb)t.encoding=ENC;t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=8;
+  if(srgb)t.encoding=ENC;t.wrapS=THREE.RepeatWrapping;t.wrapT=THREE.ClampToEdgeWrapping;t.anisotropy=4;
   loadImg(src,()=>{const e=IMG_CACHE[src];if(e.im){t.image=e.im;t.needsUpdate=true;}});return t;
 }
 let ENVT=null;
@@ -1286,7 +1286,7 @@ function parquetTex(){
       x.restore();
     }
   }
-  const t=canvasTex(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(9,9);t.anisotropy=8;return t;
+  const t=canvasTex(c);t.wrapS=t.wrapT=THREE.RepeatWrapping;t.repeat.set(9,9);t.anisotropy=4;return t;
 }
 function buildRoom(scene){
   const room=new THREE.Group();
@@ -1295,7 +1295,7 @@ function buildRoom(scene){
   const floor=new THREE.Mesh(new THREE.CircleGeometry(R0+0.3,64),new THREE.MeshStandardMaterial({map:parquetTex(),roughness:0.38,metalness:0.25,color:'#cfc0e8'}));
   floor.rotation.x=-Math.PI/2;floor.position.y=FY;floor.receiveShadow=true;room.add(floor);
   // 酒吧環景：同一張酒吧圖以鏡像拼成四面牆（圓柱），無接縫、各方向轉鏡頭都像身在酒吧裡
-  const wt=new THREE.Texture(mkCanvas(2,2));wt.encoding=ENC;wt.wrapS=THREE.MirroredRepeatWrapping;wt.repeat.set(4,1);wt.anisotropy=8;
+  const wt=new THREE.Texture(mkCanvas(2,2));wt.encoding=ENC;wt.wrapS=THREE.MirroredRepeatWrapping;wt.repeat.set(4,1);wt.anisotropy=4;
   loadImg(BG_IMG.bar,()=>{const e=IMG_CACHE[BG_IMG.bar];if(e.im){wt.image=e.im;wt.needsUpdate=true;}});
   const walls=new THREE.Mesh(new THREE.CylinderGeometry(R0,R0,H0,96,1,true),new THREE.MeshBasicMaterial({map:wt,side:THREE.BackSide,color:'#c9c2d8',fog:true}));
   walls.position.y=FY+H0/2;walls.rotation.y=Math.PI/4;room.add(walls);
@@ -1307,7 +1307,7 @@ function buildRoom(scene){
 function buildTable(scene){
   const g=new THREE.Group();
   const W=5.7,D=5.7;
-  const tex=new THREE.Texture(mkCanvas(2,2));tex.encoding=ENC;tex.anisotropy=8;
+  const tex=new THREE.Texture(mkCanvas(2,2));tex.encoding=ENC;tex.anisotropy=4;
   loadImg(BG_IMG.table,()=>{const e=IMG_CACHE[BG_IMG.table];if(e.im){tex.image=e.im;tex.needsUpdate=true;}});
   const top=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshStandardMaterial({map:tex,alphaTest:0.4,roughness:0.78,metalness:0.04,emissive:'#ffffff',emissiveMap:tex,emissiveIntensity:0.22}));
   top.rotation.x=-Math.PI/2;top.position.y=0.004;top.receiveShadow=true;g.add(top);
@@ -1354,10 +1354,11 @@ const V3=(()=>{
 
   function init(cv){
     canvas=cv;
-    renderer=new THREE.WebGLRenderer({canvas:cv,antialias:true,powerPreference:'high-performance'});
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio||1,2));
+    const dpr0=window.devicePixelRatio||1;
+    renderer=new THREE.WebGLRenderer({canvas:cv,antialias:dpr0<1.75,powerPreference:'high-performance'});
+    baseDpr=Math.min(dpr0,1.75);renderer.setPixelRatio(baseDpr);
     renderer.outputEncoding=ENC;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.15;
-    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+    renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFShadowMap;
     scene=new THREE.Scene();scene.background=new THREE.Color('#0a0612');scene.fog=new THREE.Fog('#0d0818',13,36);
     camera=new THREE.PerspectiveCamera(62,1,0.08,80);scene.add(camera);
     scene.add(new THREE.HemisphereLight(0xcdbcff,0x24143a,0.6));
@@ -1366,9 +1367,7 @@ const V3=(()=>{
     spot.castShadow=true;spot.shadow.mapSize.set(1024,1024);spot.shadow.bias=-0.0004;spot.shadow.camera.near=2;spot.shadow.camera.far=14;
     scene.add(spot,spot.target);
     const p1=new THREE.PointLight(0x8a7aff,0.8,16);p1.position.set(6,3,6);scene.add(p1);
-    const p2=new THREE.PointLight(0x6a8aff,0.7,16);p2.position.set(-6,3,-6);scene.add(p2);
-    const p3=new THREE.PointLight(0xc04aff,0.5,14);p3.position.set(0,4,-8);scene.add(p3);
-    const p4=new THREE.PointLight(0xffa860,0.45,14);p4.position.set(0,3,8);scene.add(p4);
+    scene.add(new THREE.HemisphereLight(0x7a6aff,0xffa860,0.42));
     fxLight=new THREE.PointLight(0xffffff,0,6);scene.add(fxLight);
     room=buildRoom(scene);const tb=buildTable(scene);table=tb.group;lampG=buildLamp(scene);
     // 灰塵
@@ -1386,7 +1385,23 @@ const V3=(()=>{
     canvas.addEventListener('pointermove',onMove);canvas.addEventListener('pointerdown',onDown);
     canvas.addEventListener('pointerleave',()=>{mouse.nx=mouse.ny=-9;});
     let last=performance.now();
-    (function loop(now){requestAnimationFrame(loop);const dt=Math.min(0.05,(now-last)/1000);last=now;frame(dt);})(last);
+    (function loop(now){requestAnimationFrame(loop);const raw=now-last;const dt=Math.min(0.05,raw/1000);last=now;perfAdapt(raw);frame(dt);})(last);
+  }
+  /* ---- 自動畫質：偵測到掉幀就逐步降低解析度、必要時關閉陰影 ---- */
+  let baseDpr=1,resScale=1,perfEma=16.7,perfT=0,qLow=false,shadowOn=true;
+  function applyDpr(){renderer.setPixelRatio(baseDpr*resScale);renderer.setSize(window.innerWidth,window.innerHeight,false);}
+  function setShadows(on){
+    shadowOn=on;renderer.shadowMap.enabled=on;spot.castShadow=on;
+    scene.traverse(o=>{const m=o.material;if(m)(Array.isArray(m)?m:[m]).forEach(x=>x.needsUpdate=true);});
+  }
+  function perfAdapt(ms){
+    if(document.hidden||ms>250||qLow)return;
+    perfEma+=(ms-perfEma)*0.1;perfT+=ms;
+    if(perfT<1800)return;perfT=0;
+    if(perfEma>27){
+      if(resScale>0.6){resScale=Math.max(0.6,resScale-0.13);applyDpr();perfEma=20;}
+      else if(shadowOn){setShadows(false);perfEma=20;}
+    }
   }
   function resize(){
     const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);
@@ -1835,7 +1850,7 @@ const V3=(()=>{
   }
   return {init,resize,newGame,menuScene,setMode,snapCamera,syncHand,place,reveal,roundReset,setPassed,scoreMat,discard,eliminate,lookAt,celebrate,setTargets,setHand,
     rebuildFan,relayoutFan,focusSeat,project,tween,wait,shake,burst,get seats(){return seats;},get mode(){return mode;},setSpeed(v){speed=v;},focus(v){camRig.focusT.copy(v);},
-    setQuality(q){renderer.setPixelRatio(q==='low'?1:Math.min(window.devicePixelRatio||1,2));renderer.shadowMap.enabled=q!=='low';spot.castShadow=q!=='low';scene.traverse(o=>{const m=o.material;if(m)(Array.isArray(m)?m:[m]).forEach(x=>x.needsUpdate=true);});},onFrame:null,SEAT_R,stackPos};
+    setQuality(q){qLow=q==='low';baseDpr=qLow?1:Math.min(window.devicePixelRatio||1,1.75);resScale=1;perfEma=16.7;perfT=0;applyDpr();setShadows(!qLow);},onFrame:null,SEAT_R,stackPos};
 })();
 
 /* ================= 介面與遊戲流程 ================= */
@@ -1874,7 +1889,8 @@ function openDlg(html,opts){
   requestAnimationFrame(()=>requestAnimationFrame(()=>w.classList.add('in')));
   Aud.sfx('open');
   const panel=w.firstChild;
-  w.addEventListener('pointermove',e=>{const r=panel.getBoundingClientRect();const x=((e.clientX-r.left)/r.width-0.5),y=((e.clientY-r.top)/r.height-0.5);
+  const fine=window.matchMedia&&matchMedia('(pointer:fine)').matches;
+  if(fine)w.addEventListener('pointermove',e=>{const r=panel.getBoundingClientRect();const x=((e.clientX-r.left)/r.width-0.5),y=((e.clientY-r.top)/r.height-0.5);
     if(w.classList.contains('in'))panel.style.transform=`perspective(900px) rotateY(${x*5}deg) rotateX(${-y*5}deg)`;});
   w.addEventListener('pointerleave',()=>{if(w.classList.contains('in'))panel.style.transform='';});
   const d={el:w,panel,async close(silent){if(d.closed)return;d.closed=true;w.classList.remove('in');panel.style.transform='';if(!silent)Aud.sfx('close');await sleep(300);w.remove();dlgCount--;}};
@@ -1949,7 +1965,8 @@ V3.onFrame=function(){
   G.players.forEach((p,i)=>{
     const el=plates[i];if(!el||!V3.seats[i])return;
     const q=V3.project(i,new THREE.Vector3(0,1.95,SEAT_R));
-    el.style.transform=`translate(${q.x}px,${q.y}px) translate(-50%,-100%)`;el.style.display=q.vis?'':'none';
+    const kx=Math.round(q.x*2),ky=Math.round(q.y*2),kv=q.vis?1:0;
+    if(el._kx!==kx||el._ky!==ky||el._kv!==kv){el._kx=kx;el._ky=ky;el._kv=kv;el.style.transform=`translate(${q.x}px,${q.y}px) translate(-50%,-100%)`;el.style.display=q.vis?'':'none';}
   });
   for(let i=bubbles.length-1;i>=0;i--){
     const b=bubbles[i];
