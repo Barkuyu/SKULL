@@ -255,6 +255,9 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
    <div class="field"><label>你的名字</label><input class="txt3d" id="inName" maxlength="8" value="你"></div>
    <div class="field"><label>玩家人數（含你）</label><div id="chipN"></div></div>
    <div class="field"><label>電腦強度</label><div id="chipD"></div></div>
+   <div class="field"><label>本局玫瑰代幣數量</label><div id="chipFl"></div></div>
+   <div class="field"><label>本局骷髏代幣數量</label><div id="chipSk"></div></div>
+   <div class="field"><label>本局是否開放使用技能牌</label><div id="chipCd"></div></div>
    <div class="field"><label>你的圓片花色</label><div id="chipS"></div></div>
    <div class="dlg-actions"><button class="btn3d wood" data-act="setupBack" data-sfx="back">返回</button><button class="btn3d lg" data-act="setupGo" data-sfx="confirm">入座開局</button></div>
  </div></div>
@@ -303,12 +306,14 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
 
 /* ================= 規則引擎（純邏輯，無畫面） ================= */
 function createGame(cfg){
+  const fl=clamp(cfg.fl||3,1,9),sk=clamp(cfg.sk||1,1,3);
+  const K0=Array(fl).fill('F').concat(Array(sk).fill('S'));
   const players=cfg.players.map((c,i)=>({
     idx:i,name:c.name,set:c.set,human:!!c.human,persona:c.persona||'balanced',remote:!!c.remote,peer:c.peer||null,
-    alive:true,kinds:['F','F','F','S'],hand:[],stack:[],rev:[],wins:0,passed:false,raised:false,cards:[]
+    alive:true,kinds:K0.slice(),hand:[],stack:[],rev:[],wins:0,passed:false,raised:false,cards:[]
   }));
   const N=players.length;
-  return {players,N,round:0,first:Math.floor(Math.random()*N),diff:cfg.diff||'normal',
+  return {players,N,opts:{fl,sk,cards:cfg.cards!==false},total:fl+sk,round:0,first:Math.floor(Math.random()*N),diff:cfg.diff||'normal',
     mem:{skull:new Array(N).fill(0),flip:new Array(N).fill(0)},bid:null,challenger:-1,phase:'',over:false,winner:-1,
     stats:players.map(()=>({success:0,fail:0,out:0}))};
 }
@@ -407,11 +412,13 @@ async function runGame(G,io){
         let kind=act.kind;if(!p.hand.includes(kind))kind=p.hand[0];
         p.hand.splice(p.hand.indexOf(kind),1);p.stack.push(kind);p.rev.push(false);
         await io.anim('place',{p:cur,kind,initial:false});
-        /* 技能卡：上一位玩家放了代幣、下家也放代幣（沒有開標）→ 上一位獲得一張技能卡 */
-        if(chain>=0&&chain!==cur&&P[chain].alive&&P[chain].cards.length<MAX_CARDS){
-          const card=CARD_TYPES[Math.floor(Math.random()*CARD_TYPES.length)];
-          P[chain].cards.push(card);
-          await io.anim('skillGain',{p:chain,card});
+        /* 技能卡：上一位玩家放了代幣、下家也放代幣（沒有開標）→ 上一位獲得兩張技能卡 */
+        if(G.opts.cards&&chain>=0&&chain!==cur&&P[chain].alive){
+          for(let g=0;g<2&&P[chain].cards.length<MAX_CARDS;g++){
+            const card=CARD_TYPES[Math.floor(Math.random()*CARD_TYPES.length)];
+            P[chain].cards.push(card);
+            await io.anim('skillGain',{p:chain,card});
+          }
         }
         chain=cur;
         cur=nextAlive(G,cur);
@@ -447,7 +454,7 @@ async function runGame(G,io){
     await io.anim('bidEnd',{challenger:c.idx,value:B});
     /* 技能卡時機：挑戰者確定後、開始翻牌前 */
     const fx={confusionBy:-1,secret:false};
-    await skillWindow(G,io,c,fx);
+    if(G.opts.cards)await skillWindow(G,io,c,fx);
     let flowers=0,result=null,lastStack=-1;
     while(!result){
       const unrev=q=>q.alive&&q.rev.some(r=>!r);
@@ -1239,7 +1246,7 @@ const V3=(()=>{
     tmp.position.copy(gp.pos);tmp.lookAt(gp.look);tmp.updateMatrixWorld(true);
     const dist=tmp.position.distanceTo(new VEC(0,0.2,MAT_Z));
     const hh=dist*Math.tan(camera.fov*Math.PI/360),ww=hh*camera.aspect;
-    fanCfg.sp=Math.min(0.42,1.75*ww/4.2);fanCfg.sc=fanCfg.sp/0.42;
+    const nmax=Math.max(4,(GS&&GS.total)||4);fanCfg.sp=Math.min(0.42,1.75*ww/(nmax*1.05));fanCfg.sc=Math.max(0.6,fanCfg.sp/0.42);
     const topY=0.06+2*TILE_R*fanCfg.sc*Math.sin(fanCfg.tilt)+0.06;
     const top=new VEC(0,topY,MAT_Z).project(tmp);
     const px=(1+top.y)/2*window.innerHeight;
@@ -1335,7 +1342,7 @@ const V3=(()=>{
   }
 
   /* ---------- 手牌（AI 的牌列 / 人類的扇形）---------- */
-  function rowSlot(k,n){return new VEC((k-(n-1)/2)*0.29,TILE_H/2+0.062+k*0.004,MAT_Z+0.1);}
+  function rowSlot(k,n){return new VEC((k-(n-1)/2)*Math.min(0.29,1.6/Math.max(n,1)),TILE_H/2+0.062+k*0.004,MAT_Z+0.1);}
   function layoutRowInstant(s,n){
     s.row.forEach(t=>s.g.remove(t));s.row=[];
     for(let k=0;k<n;k++){const t=tileOf(s.p.set,'F',false);t.position.copy(rowSlot(k,n));t.rotation.y=(k-1.5)*0.05;t.scale.setScalar(0.88);s.g.add(t);s.row.push(t);}
@@ -1351,7 +1358,7 @@ const V3=(()=>{
   }
   function rebuildFan(si,count,kinds){
     const s=seats[si];s.fan.forEach(t=>s.g.remove(t));s.fan=[];
-    const p=GS.players[si];const list=kinds||(p.hand&&p.hand.length?p.hand:['F','F','F','S']);
+    const p=GS.players[si];const list=kinds||(p.hand&&p.hand.length?p.hand:p.kinds);
     const sorted=list.slice().sort((a,b)=>a===b?0:a==='F'?-1:1);
     sorted.forEach((kind,k)=>{const t=tileOf(p.set,kind,true);t.scale.setScalar(fanCfg.sc);const sl=fanSlot(k,sorted.length);
       t.position.copy(sl.pos);t.rotation.set(fanCfg.tilt,0,sl.rotZ);t.userData.base=sl;s.g.add(t);s.fan.push(t);});
@@ -1671,7 +1678,7 @@ const $=s=>document.querySelector(s);
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const ABORT={abort:true};
 const rnd=(a,b)=>a+Math.random()*(b-a);
-const S={bgm:0.6,sfx:0.85,mute:false,speed:1,quality:'high',name:'你',n:4,diff:'normal',set:0};
+const S={bgm:0.6,sfx:0.85,mute:false,speed:1,quality:'high',name:'你',n:4,diff:'normal',set:0,fl:4,sk:1,cards:true};
 try{Object.assign(S,JSON.parse(localStorage.getItem('skull3d')||'{}'));}catch(e){}
 function saveS(){try{localStorage.setItem('skull3d',JSON.stringify(S));}catch(e){}}
 Aud.vols.bgm=S.bgm;Aud.vols.sfx=S.sfx;Aud.vols.mute=S.mute;
@@ -1737,7 +1744,7 @@ function refresh(){
   $('#vTotal').textContent=totalTiles(G);
   const sb=$('#scoreBox');
   sb.innerHTML=G.players.map(p=>{
-    const lost=4-p.kinds.length;
+    const lost=(G.total||4)-p.kinds.length;
     const pips='●'.repeat(p.kinds.length)+'<span style="opacity:.3">'+'○'.repeat(lost)+'</span>';
     return `<div class="srow ${p.alive?'':'out'} ${curActor===p.idx?'act':''}"><span class="who"><span class="cdot" style="background:${SETS[p.set].accent}"></span><span class="nm">${p.human?'你':p.name}</span></span><span class="pips">${p.wins?'✿':''}${p.alive?pips:'出局'}</span></div>`;}).join('');
   const me=G.players.find(p=>p.human);
@@ -2019,13 +2026,13 @@ function prepGame(){
   const sets=[0,1,2,3,4,5].filter(i=>i!==S.set).sort(()=>Math.random()-0.5);
   const players=[{name:(S.name||'你').trim()||'你',set:S.set,human:true,persona:'balanced'}];
   for(let i=1;i<S.n;i++)players.push({name:names[i-1],set:sets[i-1],human:false,persona:PERSONA_KEYS[Math.floor(Math.random()*PERSONA_KEYS.length)]});
-  G=createGame({players,diff:S.diff});
+  G=createGame({players,diff:S.diff,fl:S.fl,sk:S.sk,cards:S.cards});
   afterCreate();
 }
-function prepGameMP(roster,me,diff){
+function prepGameMP(roster,me,diff,opts){opts=opts||{};
   const N=roster.length;
   const players=roster.map((_,l)=>{const r=roster[(l+me)%N];return {name:r.name,set:r.set,human:l===0,remote:l!==0&&!!r.hum,peer:(MP.role==='host'&&r.peer)||null,persona:r.persona||'balanced'};});
-  G=createGame({players,diff:diff||'normal'});
+  G=createGame({players,diff:diff||'normal',fl:opts.fl,sk:opts.sk,cards:opts.cards});
   afterCreate();
 }
 function afterCreate(){
@@ -2065,7 +2072,7 @@ function showResult(d){
 
 /* ---------- 規則 / 設定 / 暫停 ---------- */
 const RULE_TABS={
- '目標':`<p><b>你敢翻幾枚？</b>每人有 4 枚圓片：<b>3 朵花、1 個骷髏</b>。每輪先暗放、再加放或開標，出價最高的人必須親手翻出那麼多朵花。</p>
+ '目標':`<p><b>你敢翻幾枚？</b>每人的圓片數量可在開局前設定：<b>玫瑰 4～7 枚、骷髏 1～3 枚</b>（預設 4 朵花、1 個骷髏）。每輪先暗放、再加放或開標，出價最高的人必須親手翻出那麼多朵花。</p>
    <p>同一名玩家累積 <b style="color:var(--gold)">兩次挑戰成功</b>立刻獲勝；或其他人全數淘汰時，最後留在場上的人獲勝。失敗只會永久失去一枚，已得的一次成功不會歸零。</p>`,
  '一輪流程':`<table class="ruletbl"><tr><th>1 起始暗放</th><td>每位玩家秘密選一枚背面朝上放在自己的玩家板前。<b>第一位玩家最後放</b>，正式行動時最先動。</td></tr>
    <tr><th>2 加放或開標</th><td>輪到你，可以再暗放一枚（疊在上一枚之上，每次只加一枚），或立刻<b>開標</b>。若競標尚未開始、手上又沒圓片可放，必須開標。</td></tr>
@@ -2083,7 +2090,7 @@ const RULE_TABS={
    <tr><th>被對手骷髏淘汰</th><td>那枚骷髏的主人當第一位。</td></tr>
    <tr><th>踩自己骷髏而淘汰</th><td>由被淘汰者指定下一位第一位玩家。</td></tr>
    <tr><th>終局</th><td>兩次挑戰成功，或全桌只剩一人，立刻獲勝。</td></tr></table>`,
- '技能卡':`<p><b>取得：</b>在「加放或開標」階段，你<b>再暗放一枚代幣</b>，而且<b>下家也選擇再暗放（沒有開標）</b>，你就會立刻獲得一張技能卡（100%）。每人最多持有 5 張，用掉才會再增加。</p>
+ '技能卡':`<p><b>取得：</b>在「加放或開標」階段，你<b>再暗放一枚代幣</b>，而且<b>下家也選擇再暗放（沒有開標）</b>，你就會立刻獲得<b>兩張</b>技能卡（100%，每張的種類都是隨機）。每人最多持有 5 張，用掉才會再增加。開局前也可以選擇<b>本局不開放技能牌</b>。</p>
    <p><b>發動時機：</b>競標結束、挑戰者確定後，<b>開始翻牌前</b>，持有卡的玩家依序會跳出視窗，詢問是否發動。</p>
    <table class="ruletbl"><tr><th>洗腦</th><td>本輪挑戰者須先從<b>發動者</b>的代幣堆開始翻（翻完才輪到自己的堆）。挑戰者本人不能發動。</td></tr>
    <tr><th>清醒</th><td>別人的效果卡即將影響你時（你是挑戰者，或被指定為窺視對象），可發動此卡<b>無效該次發動</b>；被無效的卡仍視為已使用。</td></tr>
@@ -2138,6 +2145,9 @@ function pauseDlg(){
 function setupInit(){
   chips($('#chipN'),[3,4,5,6].map(n=>({v:n,label:n+' 人'})),S.n,v=>{S.n=v;saveS();});
   chips($('#chipD'),[{v:'easy',label:'簡單'},{v:'normal',label:'普通'},{v:'hard',label:'困難'}],S.diff,v=>{S.diff=v;saveS();});
+  chips($('#chipFl'),[4,5,6,7].map(n=>({v:n,label:n+' 枚'})),S.fl,v=>{S.fl=v;saveS();});
+  chips($('#chipSk'),[1,2,3].map(n=>({v:n,label:n+' 枚'})),S.sk,v=>{S.sk=v;saveS();});
+  chips($('#chipCd'),[{v:true,label:'開放'},{v:false,label:'關閉'}],S.cards,v=>{S.cards=v;saveS();});
   chips($('#chipS'),SETS.map((s,i)=>({v:i,html:`<span class="dot" style="background:${s.accent}"></span>${s.name}・${s.flower}`})),S.set,v=>{S.set=v;saveS();});
   $('#inName').value=S.name;
 }
@@ -2460,7 +2470,7 @@ const Net=(()=>{
 })();
 
 /* ================= 多人模式：房間與遊戲流程 ================= */
-const MP={on:false,role:null,t:null,code:'',peers:{},order:[],T:4,diff:'normal',started:false,
+const MP={on:false,role:null,t:null,code:'',peers:{},order:[],T:4,diff:'normal',opts:{fl:4,sk:1,cards:true},started:false,
   pend:{},askId:0,me:0,queue:Promise.resolve(),lobby:[],lobbyDlg:null,cancel:null,hostGone:false};
 const mpHumans=()=>1+MP.order.length;
 function mpReset(){MP.on=false;MP.role=null;MP.t=null;MP.code='';MP.peers={};MP.order=[];MP.started=false;MP.pend={};MP.lobby=[];MP.lobbyDlg=null;MP.hostGone=false;MP.queue=Promise.resolve();}
@@ -2555,6 +2565,9 @@ function lobbyDlg(){
     <div class="inset3d" id="lList" style="margin-top:10px"></div>
     <div class="field"><label>總人數（不足由電腦補位）</label><div id="lN"></div></div>
     <div class="field"><label>電腦強度</label><div id="lD"></div></div>
+    <div class="field"><label>本局玫瑰代幣數量</label><div id="lFl"></div></div>
+    <div class="field"><label>本局骷髏代幣數量</label><div id="lSk"></div></div>
+    <div class="field"><label>本局是否開放使用技能牌</label><div id="lCd"></div></div>
     <div class="dlg-actions"><button class="btn3d wood" id="lLeave" data-sfx="back">關閉房間</button><button class="btn3d lg" id="lGo" data-sfx="confirm">開始遊戲</button></div>`);
   MP.lobbyDlg=d;
   d.el.querySelector('#lCopy').onclick=()=>{try{navigator.clipboard.writeText(MP.code).then(()=>sub('已複製密碼',1200));}catch(e){}};
@@ -2572,6 +2585,9 @@ function renderLobby(){
     const minN=Math.max(3,mpHumans());if(MP.T<minN)MP.T=minN;
     chips(d.el.querySelector('#lN'),[3,4,5,6].filter(n=>n>=mpHumans()).map(n=>({v:n,label:n+' 人'})),MP.T,v=>{MP.T=v;lobbyBroadcast();});
     chips(d.el.querySelector('#lD'),[{v:'easy',label:'簡單'},{v:'normal',label:'普通'},{v:'hard',label:'困難'}],MP.diff,v=>{MP.diff=v;});
+    chips(d.el.querySelector('#lFl'),[4,5,6,7].map(n=>({v:n,label:n+' 枚'})),MP.opts.fl,v=>{MP.opts.fl=v;});
+    chips(d.el.querySelector('#lSk'),[1,2,3].map(n=>({v:n,label:n+' 枚'})),MP.opts.sk,v=>{MP.opts.sk=v;});
+    chips(d.el.querySelector('#lCd'),[{v:true,label:'開放'},{v:false,label:'關閉'}],MP.opts.cards,v=>{MP.opts.cards=v;});
   }else{
     d.el.querySelector('#lList').innerHTML=lobbyRows(MP.lobby);
   }
@@ -2586,8 +2602,8 @@ async function hostStart(){
   rest.sort(()=>Math.random()-0.5);
   const roster=[Object.assign({hum:true,persona:'balanced'},humans[0])].concat(rest.map(r=>Object.assign({persona:'balanced'},r)));
   MP.started=true;MP.roster=roster;
-  roster.forEach((r,i)=>{if(r.peer)MP.t.send(r.peer,{t:'start',roster:roster.map(x=>({name:x.name,set:x.set,hum:x.hum,persona:x.persona})),me:i,diff:MP.diff});});
-  await fadeTo(async()=>{await closeAllDlg();prepGameMP(roster,0,MP.diff);});
+  roster.forEach((r,i)=>{if(r.peer)MP.t.send(r.peer,{t:'start',roster:roster.map(x=>({name:x.name,set:x.set,hum:x.hum,persona:x.persona})),me:i,diff:MP.diff,opts:MP.opts});});
+  await fadeTo(async()=>{await closeAllDlg();prepGameMP(roster,0,MP.diff,MP.opts);});
   runLoop();
 }
 /* 房主：廣播動畫事件 / 詢問遠端玩家 */
@@ -2645,7 +2661,7 @@ async function guestHandle(m){
   if(m.t==='start'){
     MP.started=true;MP.me=m.me;
     if(MP.lobbyDlg&&!MP.lobbyDlg.closed)MP.lobbyDlg.close(true);
-    await fadeTo(async()=>{await closeAllDlg();prepGameMP(m.roster,m.me,m.diff);});
+    await fadeTo(async()=>{await closeAllDlg();prepGameMP(m.roster,m.me,m.diff,m.opts);});
     return;
   }
   if(!G)return;
