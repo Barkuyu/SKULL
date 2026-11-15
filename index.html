@@ -1406,7 +1406,7 @@ const V3=(()=>{
   function resize(){
     const w=window.innerWidth,h=window.innerHeight;renderer.setSize(w,h,false);
     camera.aspect=w/h;
-    camera.fov=w/h<0.8?78:w/h<1.3?70:62;camera.updateProjectionMatrix();
+    camera.fov=w/h<0.8?84:w/h<1.3?70:62;camera.updateProjectionMatrix();
     calcFan();
   }
   function calcFan(){
@@ -1507,7 +1507,10 @@ const V3=(()=>{
   }
   function gameCamPos(){
     const asp=camera.aspect;
-    if(asp<0.9){const D=7.4,e=50*Math.PI/180;return {pos:new VEC(0,D*Math.sin(e),0.4+D*Math.cos(e)),look:new VEC(0,0,0.4)};}
+    if(asp<0.9){ // 直式：與橫式相同的低角度坐姿視角，鏡頭沿視線後拉讓左右玩家入鏡
+      const e=27*Math.PI/180,th=Math.tan(camera.fov*Math.PI/360);
+      const D=clamp(4.4/(asp*th),7.2,10.2);
+      return {pos:new VEC(0,0.2+D*Math.sin(e),-0.5+D*Math.cos(e)),look:new VEC(0,2.5,-0.5)};}
     const back=asp<1.4?0.25:0;
     return {pos:new VEC(0,1.78+back*0.6,SEAT_R+0.15+back),look:new VEC(0,0.12-back*0.1,back*0.3)};
   }
