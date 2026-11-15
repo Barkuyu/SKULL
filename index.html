@@ -172,6 +172,16 @@ input[type=range]::-moz-range-thumb{width:28px;height:28px;border:0;border-radiu
 .cthumb{position:relative;width:min(104px,24vw);aspect-ratio:2/3;border:0;border-radius:6px;background-size:cover;background-position:center;cursor:pointer;box-shadow:0 0 0 1px #000,0 6px 12px rgba(0,0,0,.6);transition:transform .15s}
 .cthumb:hover{transform:translateY(-4px) scale(1.04)}
 .cthumb b{position:absolute;right:4px;bottom:4px;background:#000a;color:#ffd36a;padding:1px 6px;border-radius:8px;font-size:14px}
+#gainFx{position:absolute;inset:0;z-index:55;display:flex;align-items:center;justify-content:center;pointer-events:none;perspective:1300px}
+#gainFx .ggl{position:absolute;width:120vmin;height:120vmin;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,220,140,0),rgba(255,220,140,.5),rgba(255,90,60,0),rgba(255,220,140,.5),rgba(255,220,140,0));filter:blur(14px);animation:ggs 2.6s linear both,ggi 2.6s ease-out both;mask-image:radial-gradient(circle,#000 20%,transparent 66%);-webkit-mask-image:radial-gradient(circle,#000 20%,transparent 66%)}
+#gainFx.fly .ggl{opacity:0;animation:none}
+#gainFx .gcard{position:relative;height:min(46vh,70vw);aspect-ratio:2/3;background-size:cover;background-position:center;border-radius:5%;transform-style:preserve-3d;box-shadow:0 0 30px 8px rgba(255,210,120,.8),0 0 90px 24px rgba(255,80,60,.45)}
+@keyframes gcIn{from{opacity:0;transform:translateY(30vh) scale(.3)}to{opacity:1;transform:none}}
+@keyframes gcSpin{from{transform:rotateY(0)}to{transform:rotateY(1080deg)}}
+@keyframes gcGlow{from{filter:brightness(1) drop-shadow(0 0 10px #ffd27a)}to{filter:brightness(1.45) drop-shadow(0 0 34px #fff3c4)}}
+@keyframes gcFly{from{transform:none}to{transform:translate(var(--dx),var(--dy)) scale(var(--s));opacity:.95}}
+@keyframes ggs{to{transform:rotate(300deg)}}
+@keyframes ggi{0%{opacity:0}25%{opacity:1}100%{opacity:.9}}
 #cardFx{position:absolute;inset:0;z-index:50;display:none;align-items:center;justify-content:center;pointer-events:none}
 #cardFx.on{display:flex}
 #cardFx .fxGlow{position:absolute;width:140vmax;height:140vmax;background:radial-gradient(circle,rgba(255,220,140,.55),rgba(255,80,60,.25) 28%,rgba(0,0,0,0) 55%);animation:fxg 1.7s ease-out both}
@@ -760,6 +770,11 @@ const Aud=(()=>{
   S.raise=()=>{const t=ctx.currentTime;noise(t,0.02,0.3,'bandpass',2600,1800,2);tone('sine',700,700,t,0.09,0.32);tone('sine',1050,1050,t+0.06,0.1,0.32);tone('sine',1400,1400,t+0.12,0.22,0.34);};
   S.pass=()=>{const t=ctx.currentTime;noise(t,0.05,0.3,'lowpass',700,250,0.8);tone('sine',130,70,t,0.16,0.6);};
   S.skill=()=>{const t=ctx.currentTime;noise(t,0.5,0.25,'bandpass',800,5200,1.2);[880,1108,1318,1760,2217].forEach((f,i)=>tone('sine',f,f,t+i*0.07,0.5,0.2));tone('triangle',220,110,t,0.7,0.3);};
+  S.cardget=()=>{const t=ctx.currentTime;
+    noise(t,1.9,0.16,'bandpass',700,7000,3);
+    [0,1,2,3,4,5,6].forEach(i=>{const f=520*Math.pow(1.19,i);tone('sine',f,f*1.01,t+i*0.24,0.55,0.11);tone('triangle',f*2,f*2,t+i*0.24,0.3,0.05);});
+    tone('sine',90,420,t,1.8,0.18,null,{lp:900,lp2:300});
+    tone('sine',1568,1568,t+1.85,0.7,0.16);tone('sine',2093,2093,t+1.95,0.8,0.12);noise(t+1.85,0.35,0.22,'highpass',5000,9000,1);};
   S.clarity=()=>{const t=ctx.currentTime;noise(t,0.25,0.5,'bandpass',3000,600,2);tone('square',440,90,t,0.35,0.25,null,{lp:1200,lp2:300});tone('sine',1568,1568,t+0.05,0.4,0.15);};
   S.ping=()=>{const t=ctx.currentTime;tone('sine',1174,1174,t,0.35,0.16);tone('sine',1760,1760,t+0.05,0.3,0.08);};
   S.open=()=>{const t=ctx.currentTime;noise(t,0.22,0.22,'bandpass',500,2200,0.9);tone('sine',260,420,t,0.16,0.22);tone('sine',620,620,t+0.12,0.2,0.14);};
@@ -1923,7 +1938,9 @@ async function handleAnim(type,d,my){
     case 'skillWindow':{
       setHint('');curActor=-1;refresh();await V3.wait(0.25);break;}
     case 'skillGain':{
-      const p=G.players[d.p];Aud.sfx('ping');refresh();
+      const p=G.players[d.p];
+      if(p.human){gainHold=1;renderCards();await gainAnim(d.card);gainHold=0;}
+      Aud.sfx('ping');refresh();
       if(p.human){sub(`獲得技能卡：${CARD_NAMES[d.card]}`,2600);log(`你獲得技能卡「${CARD_NAMES[d.card]}」`);}
       else log(`${p.name} 獲得一張技能卡`);
       await V3.wait(p.human?0.9:0.3);break;}
@@ -2189,10 +2206,31 @@ const CARD_FX={
 const cardUrl=t=>`url(${CARD_IMG[t]})`;
 let lastCardN=0;
 function cardEl(t,cls){const e=document.createElement('div');e.className='sc '+(cls||'');e.style.backgroundImage=cardUrl(t);e.dataset.card=t;return e;}
+let gainHold=0;
+async function gainAnim(type){
+  try{
+    const host=document.getElementById('skillFan');
+    const ov=document.createElement('div');ov.id='gainFx';
+    ov.innerHTML='<div class="ggl"></div><div class="gcard"></div>';
+    const gc=ov.querySelector('.gcard');gc.style.backgroundImage=cardUrl(type);
+    const W0=Math.min(innerHeight*0.46,innerWidth*0.7)/1.5;
+    const cw=Math.min(innerHeight*0.146,innerWidth*0.26);
+    let dx=0,dy=innerHeight*0.32;
+    if(host){const r=host.getBoundingClientRect();if(r&&r.width){dx=0;dy=(r.bottom-cw*0.75)-innerHeight*0.46;}}
+    gc.style.setProperty('--dx',dx+'px');gc.style.setProperty('--dy',dy+'px');gc.style.setProperty('--s',(cw/W0).toFixed(3));
+    (document.getElementById('game')||document.body).appendChild(ov);
+    Aud.sfx('cardget');
+    gc.style.animation='gcIn .35s cubic-bezier(.2,.9,.2,1) both';await V3.wait(0.35);
+    gc.style.animation='gcSpin 1.75s ease-in-out both, gcGlow .45s ease-in-out infinite alternate';await V3.wait(1.75);
+    gc.style.animation='gcFly .5s cubic-bezier(.5,0,.3,1) both';ov.classList.add('fly');await V3.wait(0.5);
+    ov.remove();
+  }catch(e){const o=document.getElementById('gainFx');if(o)o.remove();}
+}
 function renderCards(){
   const host=document.getElementById('skillFan');if(!host)return;
   const me=G&&G.players.find(p=>p.human);
-  const list=me&&me.alive!==false?me.cards:[];
+  let list=me&&me.alive!==false?me.cards:[];
+  if(gainHold&&list.length)list=list.slice(0,list.length-gainHold);
   const gain=list.length>lastCardN&&lastCardN>=0&&host.dataset.game===String(runId);
   host.dataset.game=String(runId);
   host.innerHTML='';
