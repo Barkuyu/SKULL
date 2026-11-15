@@ -1151,7 +1151,7 @@ function buildRoom(scene){
 }
 function buildTable(scene){
   const g=new THREE.Group();
-  const W=7.9,D=W/BG_IMG.tableAspect;
+  const W=5.7,D=5.7;
   const tex=new THREE.Texture(mkCanvas(2,2));tex.encoding=ENC;tex.anisotropy=8;
   loadImg(BG_IMG.table,()=>{const e=IMG_CACHE[BG_IMG.table];if(e.im){tex.image=e.im;tex.needsUpdate=true;}});
   const top=new THREE.Mesh(new THREE.PlaneGeometry(W,D),new THREE.MeshStandardMaterial({map:tex,alphaTest:0.4,roughness:0.78,metalness:0.04,emissive:'#ffffff',emissiveMap:tex,emissiveIntensity:0.22}));
@@ -1246,7 +1246,7 @@ const V3=(()=>{
     tmp.position.copy(gp.pos);tmp.lookAt(gp.look);tmp.updateMatrixWorld(true);
     const dist=tmp.position.distanceTo(new VEC(0,0.2,MAT_Z));
     const hh=dist*Math.tan(camera.fov*Math.PI/360),ww=hh*camera.aspect;
-    const nmax=Math.max(4,(GS&&GS.total)||4);fanCfg.sp=Math.min(0.42,1.75*ww/(nmax*1.05));fanCfg.sc=Math.max(0.6,fanCfg.sp/0.42);
+    const nmax=Math.max(4,(GS&&GS.total)||4);fanCfg.sp=Math.min(camera.aspect<0.9?0.8:0.42,1.75*ww/(nmax*1.05));fanCfg.sc=Math.max(0.6,fanCfg.sp/0.42);
     const topY=0.06+2*TILE_R*fanCfg.sc*Math.sin(fanCfg.tilt)+0.06;
     const top=new VEC(0,topY,MAT_Z).project(tmp);
     const px=(1+top.y)/2*window.innerHeight;
@@ -1287,7 +1287,7 @@ const V3=(()=>{
     players.forEach((p,i)=>{
       const a=seatAngle(i,N);
       const g=new THREE.Group();g.rotation.y=a;
-      {const AX=4.2,AZ=SEAT_R,r=1/Math.sqrt(Math.pow(Math.sin(a)/AX,2)+Math.pow(Math.cos(a)/AZ,2)),dl=r-SEAT_R;g.position.set(Math.sin(a)*dl,0,Math.cos(a)*dl);}
+      {const AX=SEAT_R,AZ=SEAT_R,r=1/Math.sqrt(Math.pow(Math.sin(a)/AX,2)+Math.pow(Math.cos(a)/AZ,2)),dl=r-SEAT_R;g.position.set(Math.sin(a)*dl,0,Math.cos(a)*dl);}
       scene.add(g);
       const s={i,p,g,a,stack:[],row:[],fan:[],passed:false,dead:false,fig:null,mat:null,matTop:null,look:undefined,lookTarget:null};
       // 玩家板
@@ -1337,7 +1337,8 @@ const V3=(()=>{
   }
   function gameCamPos(){
     const asp=camera.aspect;
-    const back=asp<0.9?0.6:asp<1.4?0.25:0;
+    if(asp<0.9){const D=7.4,e=50*Math.PI/180;return {pos:new VEC(0,D*Math.sin(e),0.4+D*Math.cos(e)),look:new VEC(0,0,0.4)};}
+    const back=asp<1.4?0.25:0;
     return {pos:new VEC(0,1.78+back*0.6,SEAT_R+0.15+back),look:new VEC(0,0.12-back*0.1,back*0.3)};
   }
 
@@ -1613,8 +1614,8 @@ const V3=(()=>{
     }else{
       const gp=gameCamPos();
       camRig.focus.lerp(camRig.focusT,1-Math.exp(-dt*2.2));
-      const tp=gp.pos.clone();tp.x+=camRig.focus.x*0.6;tp.z+=camRig.focus.z*0.25;
-      const tl=gp.look.clone().add(camRig.focus);
+      const tp=gp.pos.clone();const pk=camera.aspect<0.9?0.12:1;tp.x+=camRig.focus.x*0.6*pk;tp.z+=camRig.focus.z*0.25*pk;
+      const tl=gp.look.clone().add(camRig.focus.clone().multiplyScalar(pk));
       camRig.pos.lerp(tp,1-Math.exp(-dt*3));camRig.look.lerp(tl,1-Math.exp(-dt*3));
     }
     camera.position.copy(camRig.pos);
